@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server"
 import Anthropic from "@anthropic-ai/sdk"
 import { createClient } from "@supabase/supabase-js"
+import { withRateLimit } from "@/lib/withRateLimit"
+import { aiRatelimit } from "@/lib/ratelimit"
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
 
@@ -20,12 +22,17 @@ async function getDistanceKm(origin, destination) {
 }
 
 export async function POST(request) {
-  try {
-    const { transcript, products, departure_city, free_km, price_per_km, accessToken } = await request.json()
+  return withRateLimit(request, aiRatelimit, async (req) => {
+    try {
+      const { transcript, products, departure_city, free_km, price_per_km, accessToken } = await req.json()
 
-    if (!transcript) {
-      return NextResponse.json({ error: "transcript manquant" }, { status: 400 })
-    }
+      if (!accessToken) {
+        return NextResponse.json({ error: "accessToken requis" }, { status: 401 })
+      }
+
+      if (!transcript) {
+        return NextResponse.json({ error: "transcript manquant" }, { status: 400 })
+      }
 
     const catalogText = products?.length > 0
       ? products.map(p => `- ${p.name} : ${p.unit_price} EUR/${p.unit}`).join("\n")
@@ -123,7 +130,7 @@ Format de réponse JSON strict (respecte EXACTEMENT ces champs) :
     }
 
     // Lookup / création client dans le carnet
-    if (accessToken && result.client_name) {
+    if (result.client_name) {
       try {
         const supabase = createClient(
           process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -186,4 +193,5 @@ Format de réponse JSON strict (respecte EXACTEMENT ces champs) :
     console.error("voice-quote error:", error)
     return NextResponse.json({ error: "Erreur serveur : " + error.message }, { status: 500 })
   }
+  })
 }

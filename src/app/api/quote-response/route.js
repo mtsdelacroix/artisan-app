@@ -1,10 +1,13 @@
 import { NextResponse } from "next/server"
 import { createClient } from "@supabase/supabase-js"
 import { Resend } from "resend"
+import { withRateLimit } from "@/lib/withRateLimit"
+import { generalRatelimit } from "@/lib/ratelimit"
 
 export async function POST(request) {
-  try {
-    const { token, action, message } = await request.json()
+  return withRateLimit(request, generalRatelimit, async (req) => {
+    try {
+      const { token, action, message } = await req.json()
 
     if (!token || !["accepted", "rejected"].includes(action)) {
       return NextResponse.json({ error: "Paramètres invalides" }, { status: 400 })
@@ -127,4 +130,5 @@ export async function POST(request) {
     console.error("quote-response error:", error)
     return NextResponse.json({ error: "Erreur serveur : " + error.message }, { status: 500 })
   }
+  })
 }

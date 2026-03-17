@@ -1,11 +1,14 @@
 import { NextResponse } from "next/server"
 import { createClient } from "@supabase/supabase-js"
+import { withRateLimit } from "@/lib/withRateLimit"
+import { generalRatelimit } from "@/lib/ratelimit"
 
 const ACCEPTED_STATUSES = ["accepted", "waiting_deposit", "deposit_received", "in_progress", "waiting_balance", "completed"]
 
 export async function GET(request) {
-  const { searchParams } = new URL(request.url)
-  const accessToken = searchParams.get("accessToken")
+  return withRateLimit(request, generalRatelimit, async (req) => {
+    const { searchParams } = new URL(req.url)
+    const accessToken = searchParams.get("accessToken")
   const period = searchParams.get("period") || "3months"
 
   if (!accessToken) return NextResponse.json({ error: "accessToken requis" }, { status: 401 })
@@ -120,5 +123,6 @@ export async function GET(request) {
     periodTotal: periodQuotes.length,
     monthlyData,
     distributionData,
+  })
   })
 }

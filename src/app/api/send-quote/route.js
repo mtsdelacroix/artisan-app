@@ -2,6 +2,8 @@ import { NextResponse } from "next/server"
 import { createClient } from "@supabase/supabase-js"
 import { Resend } from "resend"
 import { buildQuoteHtml } from "../generate-pdf/template.js"
+import { withRateLimit } from "@/lib/withRateLimit"
+import { emailRatelimit } from "@/lib/ratelimit"
 
 const LOCAL_CHROME_PATH =
   process.env.CHROME_PATH ||
@@ -28,12 +30,13 @@ async function getBrowser() {
 }
 
 export async function POST(request) {
-  try {
-    const { quoteId, accessToken, message } = await request.json()
+  return withRateLimit(request, emailRatelimit, async (req) => {
+    try {
+      const { quoteId, accessToken, message } = await req.json()
 
-    if (!quoteId || !accessToken) {
-      return NextResponse.json({ error: "quoteId et accessToken requis" }, { status: 400 })
-    }
+      if (!quoteId || !accessToken) {
+        return NextResponse.json({ error: "quoteId et accessToken requis" }, { status: 400 })
+      }
 
     if (!process.env.RESEND_API_KEY) {
       return NextResponse.json({ error: "Clé API Resend non configurée" }, { status: 500 })
@@ -218,4 +221,5 @@ export async function POST(request) {
       { status: 500 }
     )
   }
+  })
 }

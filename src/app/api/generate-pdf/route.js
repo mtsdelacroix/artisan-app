@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server"
 import { createClient } from "@supabase/supabase-js"
 import { buildQuoteHtml } from "./template.js"
+import { withRateLimit } from "@/lib/withRateLimit"
+import { pdfRatelimit } from "@/lib/ratelimit"
 
 // Chemin Chrome local macOS (fallback dev)
 const LOCAL_CHROME_PATH =
@@ -30,12 +32,13 @@ async function getBrowser() {
 }
 
 export async function POST(request) {
-  try {
-    const { quoteId, accessToken } = await request.json()
+  return withRateLimit(request, pdfRatelimit, async (req) => {
+    try {
+      const { quoteId, accessToken } = await req.json()
 
-    if (!quoteId || !accessToken) {
-      return NextResponse.json({ error: "quoteId et accessToken requis" }, { status: 400 })
-    }
+      if (!quoteId || !accessToken) {
+        return NextResponse.json({ error: "quoteId et accessToken requis" }, { status: 400 })
+      }
 
     // Client Supabase authentifié avec le token de l'utilisateur
     const supabase = createClient(
@@ -111,4 +114,5 @@ export async function POST(request) {
       { status: 500 }
     )
   }
+  })
 }

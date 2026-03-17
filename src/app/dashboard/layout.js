@@ -45,12 +45,12 @@ export default function DashboardLayout({ children }) {
 
   return (
     <>
-      {children}
+      <main className="main-content">{children}</main>
       <AgentModal />
 
       {/* Bottom Navigation — glassmorphism */}
       <nav
-        className="fixed bottom-0 left-0 right-0 z-40 safe-area-bottom"
+        className="fixed bottom-0 left-0 right-0 z-40 bottom-nav"
         style={{
           background: "rgba(255, 255, 255, 0.92)",
           backdropFilter: "blur(24px)",

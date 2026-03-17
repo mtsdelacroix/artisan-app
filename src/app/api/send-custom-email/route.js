@@ -2,49 +2,52 @@ import { NextResponse } from "next/server"
 import Anthropic from "@anthropic-ai/sdk"
 import { createClient } from "@supabase/supabase-js"
 import { Resend } from "resend"
+import { withRateLimit } from "@/lib/withRateLimit"
+import { emailRatelimit } from "@/lib/ratelimit"
 
 const ai = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
 
 export async function POST(request) {
-  try {
-    const { clientName, clientEmail, subject, message, accessToken } = await request.json()
+  return withRateLimit(request, emailRatelimit, async (req) => {
+    try {
+      const { clientName, clientEmail, subject, message, accessToken } = await req.json()
 
-    if (!clientEmail || !message || !accessToken) {
-      return NextResponse.json({ error: "Paramètres manquants" }, { status: 400 })
-    }
+      if (!clientEmail || !message || !accessToken) {
+        return NextResponse.json({ error: "Paramètres manquants" }, { status: 400 })
+      }
 
-    // Auth via accessToken
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
-      { global: { headers: { Authorization: `Bearer ${accessToken}` } } }
-    )
+      // Auth via accessToken
+      const supabase = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+        { global: { headers: { Authorization: `Bearer ${accessToken}` } } }
+      )
 
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return NextResponse.json({ error: "Non autorisé" }, { status: 401 })
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return NextResponse.json({ error: "Non autorisé" }, { status: 401 })
 
-    const { data: artisan } = await supabase
-      .from("artisans")
-      .select("*")
-      .eq("user_id", user.id)
-      .single()
+      const { data: artisan } = await supabase
+        .from("artisans")
+        .select("*")
+        .eq("user_id", user.id)
+        .single()
 
-    if (!artisan) return NextResponse.json({ error: "Artisan introuvable" }, { status: 404 })
+      if (!artisan) return NextResponse.json({ error: "Artisan introuvable" }, { status: 404 })
 
-    // Reformater le message avec Claude
-    const fmtMsg = await ai.messages.create({
-      model: "claude-sonnet-4-6",
-      max_tokens: 512,
-      system: `Tu es un assistant pour artisans belges. Reformate ce message en email professionnel concis. Commence directement par le corps du message (sans "Bonjour" ni signature, l'artisan les gère). Corrige les fautes, améliore le style, mais conserve exactement les informations. Réponds UNIQUEMENT avec le texte reformaté, sans commentaire.`,
-      messages: [{ role: "user", content: message }],
-    })
-    const formattedMessage = fmtMsg.content[0]?.type === "text" ? fmtMsg.content[0].text.trim() : message
+      // Reformater le message avec Claude
+      const fmtMsg = await ai.messages.create({
+        model: "claude-sonnet-4-6",
+        max_tokens: 512,
+        system: `Tu es un assistant pour artisans belges. Reformate ce message en email professionnel concis. Commence directement par le corps du message (sans "Bonjour" ni signature, l'artisan les gère). Corrige les fautes, améliore le style, mais conserve exactement les informations. Réponds UNIQUEMENT avec le texte reformaté, sans commentaire.`,
+        messages: [{ role: "user", content: message }],
+      })
+      const formattedMessage = fmtMsg.content[0]?.type === "text" ? fmtMsg.content[0].text.trim() : message
 
-    const brandColor = artisan.brand_color || "#2563eb"
-    const artisanName = artisan.business_name || `${artisan.first_name || ""} ${artisan.last_name || ""}`.trim()
-    const emailSubject = subject || `Message de ${artisanName}`
+      const brandColor = artisan.brand_color || "#2563eb"
+      const artisanName = artisan.business_name || `${artisan.first_name || ""} ${artisan.last_name || ""}`.trim()
+      const emailSubject = subject || `Message de ${artisanName}`
 
-    const html = `<!DOCTYPE html>
+      const html = `<!DOCTYPE html>
 <html lang="fr">
 <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
 <body style="margin:0;padding:0;background:#f4f7f9;font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;">
@@ -76,23 +79,24 @@ export async function POST(request) {
 </body>
 </html>`
 
-    const resend = new Resend(process.env.RESEND_API_KEY)
-    const { error: sendError } = await resend.emails.send({
-      from: `${artisanName} <onboarding@resend.dev>`,
-      to: clientEmail,
-      ...(artisan.email ? { replyTo: artisan.email } : {}),
-      subject: emailSubject,
-      html,
-    })
+      const resend = new Resend(process.env.RESEND_API_KEY)
+      const { error: sendError } = await resend.emails.send({
+        from: `${artisanName} <onboarding@resend.dev>`,
+        to: clientEmail,
+        ...(artisan.email ? { replyTo: artisan.email } : {}),
+        subject: emailSubject,
+        html,
+      })
 
-    if (sendError) {
-      return NextResponse.json({ error: "Erreur envoi : " + sendError.message }, { status: 500 })
+      if (sendError) {
+        return NextResponse.json({ error: "Erreur envoi : " + sendError.message }, { status: 500 })
+      }
+
+      return NextResponse.json({ success: true })
+
+    } catch (error) {
+      console.error("send-custom-email error:", error)
+      return NextResponse.json({ error: "Erreur serveur : " + error.message }, { status: 500 })
     }
-
-    return NextResponse.json({ success: true })
-
-  } catch (error) {
-    console.error("send-custom-email error:", error)
-    return NextResponse.json({ error: "Erreur serveur : " + error.message }, { status: 500 })
-  }
+  })
 }

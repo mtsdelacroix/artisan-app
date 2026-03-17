@@ -1,12 +1,27 @@
 import { NextResponse } from "next/server"
 import Anthropic from "@anthropic-ai/sdk"
+import { createClient } from "@supabase/supabase-js"
+import { withRateLimit } from "@/lib/withRateLimit"
+import { aiRatelimit } from "@/lib/ratelimit"
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
 
 export async function POST(request) {
-  try {
-    const { rawText } = await request.json()
-    if (!rawText) return NextResponse.json({ error: "rawText manquant" }, { status: 400 })
+  return withRateLimit(request, aiRatelimit, async (req) => {
+    try {
+      const { rawText, accessToken } = await req.json()
+
+      if (!accessToken) return NextResponse.json({ error: "accessToken requis" }, { status: 401 })
+
+      const supabase = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+        { global: { headers: { Authorization: `Bearer ${accessToken}` } } }
+      )
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return NextResponse.json({ error: "Non autorisé" }, { status: 401 })
+
+      if (!rawText) return NextResponse.json({ error: "rawText manquant" }, { status: 400 })
 
     const message = await client.messages.create({
       model: "claude-sonnet-4-6",
@@ -20,4 +35,5 @@ export async function POST(request) {
   } catch (error) {
     return NextResponse.json({ error: "Erreur serveur : " + error.message }, { status: 500 })
   }
+  })
 }

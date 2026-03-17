@@ -1,14 +1,17 @@
 import { NextResponse } from "next/server"
 import { createClient } from "@supabase/supabase-js"
 import { Resend } from "resend"
+import { withRateLimit } from "@/lib/withRateLimit"
+import { emailRatelimit } from "@/lib/ratelimit"
 
 export async function POST(request) {
-  try {
-    const { quoteId, accessToken } = await request.json()
+  return withRateLimit(request, emailRatelimit, async (req) => {
+    try {
+      const { quoteId, accessToken } = await req.json()
 
-    if (!quoteId || !accessToken) {
-      return NextResponse.json({ error: "quoteId et accessToken requis" }, { status: 400 })
-    }
+      if (!quoteId || !accessToken) {
+        return NextResponse.json({ error: "quoteId et accessToken requis" }, { status: 400 })
+      }
     if (!process.env.RESEND_API_KEY) {
       return NextResponse.json({ error: "Clé API Resend non configurée" }, { status: 500 })
     }
@@ -94,6 +97,7 @@ export async function POST(request) {
     console.error("send-review-request error:", error)
     return NextResponse.json({ error: "Erreur serveur : " + error.message }, { status: 500 })
   }
+  })
 }
 
 function buildReviewHtml({ artisanName, clientName, quoteRef, quoteTitle, brandColor, googleReviewUrl, artisanEmail }) {

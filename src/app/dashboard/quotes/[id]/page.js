@@ -211,10 +211,11 @@ export default function EditQuotePage() {
   const handleFormatNote = async (rawText) => {
     setIsFormattingNote(true)
     try {
+      const { data: { session } } = await supabase.auth.getSession()
       const res = await fetch("/api/format-note", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ rawText }),
+        body: JSON.stringify({ rawText, accessToken: session?.access_token }),
       })
       const data = await res.json()
       if (res.ok && data.text) setInternalNotes(data.text)
@@ -296,12 +297,14 @@ export default function EditQuotePage() {
       setIsFormattingMsg(true)
       try {
         const artisanName = profile?.business_name || `${profile?.first_name || ""} ${profile?.last_name || ""}`.trim()
+        const { data: { session: fmtSession } } = await supabase.auth.getSession()
         const res = await fetch("/api/format-message", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             rawText: final.trim(),
             context: { clientName, artisanName, quoteNumber: quoteRef },
+            accessToken: fmtSession?.access_token,
           }),
         })
         const data = await res.json()

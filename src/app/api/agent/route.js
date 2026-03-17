@@ -1,16 +1,19 @@
 import { NextResponse } from "next/server"
 import Anthropic from "@anthropic-ai/sdk"
 import { createClient } from "@supabase/supabase-js"
+import { withRateLimit } from "@/lib/withRateLimit"
+import { aiRatelimit } from "@/lib/ratelimit"
 
 const ai = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
 
 export async function POST(request) {
-  try {
-    const { transcript, artisanId, accessToken } = await request.json()
+  return withRateLimit(request, aiRatelimit, async (req) => {
+    try {
+      const { transcript, artisanId, accessToken } = await req.json()
 
-    if (!transcript || !artisanId || !accessToken) {
-      return NextResponse.json({ error: "Paramètres manquants" }, { status: 400 })
-    }
+      if (!transcript || !artisanId || !accessToken) {
+        return NextResponse.json({ error: "Paramètres manquants" }, { status: 400 })
+      }
 
     // Auth via accessToken
     const supabase = createClient(
@@ -196,4 +199,5 @@ Format strict :
     console.error("agent error:", error)
     return NextResponse.json({ error: "Erreur serveur : " + error.message }, { status: 500 })
   }
+  })
 }

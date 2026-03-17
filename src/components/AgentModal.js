@@ -222,12 +222,25 @@ export default function AgentModal() {
       {/* Bouton flottant */}
       <button
         onClick={handleFabClick}
-        className="fixed bottom-6 right-6 z-[55] w-16 h-16 rounded-full shadow-2xl flex items-center justify-center text-2xl transition-transform hover:scale-105 active:scale-95 select-none"
-        style={{ backgroundColor: brandColor }}
+        className="fixed z-40 flex items-center justify-center transition-all duration-200 hover:scale-105 active:scale-95 select-none"
+        style={{
+          bottom: "calc(80px + env(safe-area-inset-bottom, 0px) + 16px)",
+          right: "20px",
+          width: "52px",
+          height: "52px",
+          borderRadius: "50%",
+          backgroundColor: brandColor,
+          opacity: 0.82,
+          boxShadow: `0 4px 16px ${brandColor}40`,
+          backdropFilter: "blur(8px)",
+          WebkitBackdropFilter: "blur(8px)",
+        }}
+        onMouseEnter={(e) => (e.currentTarget.style.opacity = "1")}
+        onMouseLeave={(e) => (e.currentTarget.style.opacity = "0.82")}
         aria-label="Assistant vocal"
         title="Assistant vocal IA"
       >
-        🎤
+        <Mic size={20} color="white" />
       </button>
 
       {/* Bottom sheet */}
