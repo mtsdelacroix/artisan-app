@@ -73,8 +73,11 @@ export default function LoginPage() {
     setIsLoading(false)
   }
 
+  const inputClass = "w-full h-12 pl-9 pr-4 rounded-xl border border-gray-200 text-base bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent focus:bg-white transition-all"
+  const inputClassNoIcon = "w-full h-12 px-4 rounded-xl border border-gray-200 text-base bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent focus:bg-white transition-all"
+
   return (
-    <div className="min-h-screen flex items-center justify-center p-4"
+    <div className="min-h-screen flex items-center justify-center px-5 py-8"
       style={{ background: "linear-gradient(135deg, #1e3a8a 0%, #1e40af 50%, #3b82f6 100%)" }}>
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
@@ -86,7 +89,7 @@ export default function LoginPage() {
           <p className="text-blue-200 mt-1">Vos devis en 2 minutes</p>
         </div>
 
-        <div className="bg-white rounded-2xl shadow-2xl p-8">
+        <div className="bg-white rounded-2xl shadow-2xl px-5 py-6 sm:px-8 sm:py-8">
           <div className="flex mb-6 bg-gray-100 rounded-xl p-1">
             <button
               onClick={() => { setIsLogin(true); setError(null); setSuccess(null) }}
@@ -114,18 +117,22 @@ export default function LoginPage() {
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
                 <div className="relative">
-                  <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
-                  <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="votre@email.com" required className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+                  <div className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none z-10 text-gray-400">
+                    <Mail size={15} />
+                  </div>
+                  <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="votre@email.com" required className={inputClass} />
                 </div>
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Mot de passe</label>
                 <div className="relative">
-                  <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
-                  <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Minimum 8 caracteres" required className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+                  <div className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none z-10 text-gray-400">
+                    <Lock size={15} />
+                  </div>
+                  <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Minimum 8 caracteres" required className={inputClass} />
                 </div>
               </div>
-              <button type="submit" disabled={isLoading} className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl transition-colors flex items-center justify-center gap-2 disabled:opacity-50">
+              <button type="submit" disabled={isLoading} className="w-full h-12 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl transition-colors flex items-center justify-center gap-2 disabled:opacity-50">
                 {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <ArrowRight className="w-4 h-4" />}
                 Se connecter
               </button>
@@ -136,28 +143,34 @@ export default function LoginPage() {
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Prenom</label>
                   <div className="relative">
-                    <User className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
-                    <input type="text" value={firstName} onChange={(e) => setFirstName(e.target.value)} placeholder="Jean" required className="w-full pl-10 pr-3 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                    <div className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none z-10 text-gray-400">
+                      <User size={15} />
+                    </div>
+                    <input type="text" value={firstName} onChange={(e) => setFirstName(e.target.value)} placeholder="Jean" required className={inputClass} />
                   </div>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Nom</label>
                   <div className="relative">
-                    <User className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
-                    <input type="text" value={lastName} onChange={(e) => setLastName(e.target.value)} placeholder="Dupont" required className="w-full pl-10 pr-3 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                    <div className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none z-10 text-gray-400">
+                      <User size={15} />
+                    </div>
+                    <input type="text" value={lastName} onChange={(e) => setLastName(e.target.value)} placeholder="Dupont" required className={inputClass} />
                   </div>
                 </div>
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Nom de l entreprise</label>
                 <div className="relative">
-                  <Building2 className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
-                  <input type="text" value={businessName} onChange={(e) => setBusinessName(e.target.value)} placeholder="Dupont Electricite" required className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                  <div className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none z-10 text-gray-400">
+                    <Building2 size={15} />
+                  </div>
+                  <input type="text" value={businessName} onChange={(e) => setBusinessName(e.target.value)} placeholder="Dupont Electricite" required className={inputClass} />
                 </div>
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Metier</label>
-                <select value={trade} onChange={(e) => setTrade(e.target.value)} className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white">
+                <select value={trade} onChange={(e) => setTrade(e.target.value)} className={inputClassNoIcon}>
                   {trades.map((t) => (
                     <option key={t.value} value={t.value}>{t.label}</option>
                   ))}
@@ -166,25 +179,31 @@ export default function LoginPage() {
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Telephone</label>
                 <div className="relative">
-                  <Phone className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
-                  <input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+32 4XX XX XX XX" required className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                  <div className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none z-10 text-gray-400">
+                    <Phone size={15} />
+                  </div>
+                  <input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+32 4XX XX XX XX" required className={inputClass} />
                 </div>
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
                 <div className="relative">
-                  <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
-                  <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="votre@email.com" required className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                  <div className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none z-10 text-gray-400">
+                    <Mail size={15} />
+                  </div>
+                  <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="votre@email.com" required className={inputClass} />
                 </div>
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Mot de passe</label>
                 <div className="relative">
-                  <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
-                  <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Minimum 8 caracteres" required minLength={8} className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                  <div className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none z-10 text-gray-400">
+                    <Lock size={15} />
+                  </div>
+                  <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Minimum 8 caracteres" required minLength={8} className={inputClass} />
                 </div>
               </div>
-              <button type="submit" disabled={isLoading} className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl transition-colors flex items-center justify-center gap-2 disabled:opacity-50">
+              <button type="submit" disabled={isLoading} className="w-full h-12 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl transition-colors flex items-center justify-center gap-2 disabled:opacity-50">
                 {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <ArrowRight className="w-4 h-4" />}
                 Creer mon compte
               </button>

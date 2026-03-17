@@ -79,6 +79,13 @@ body {
   padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 
+/* ── Prevent iOS auto-zoom on input focus ── */
+@media (max-width: 768px) {
+  input, select, textarea {
+    font-size: 16px !important;
+  }
+}
+
 /* ── Hide scrollbar ── */
 .scrollbar-hide {
   -ms-overflow-style: none;
