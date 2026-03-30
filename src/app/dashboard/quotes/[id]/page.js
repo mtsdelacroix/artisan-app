@@ -544,7 +544,7 @@ export default function EditQuotePage() {
 
       {/* Header */}
       <header className="bg-white border-b border-gray-200 sticky top-0 z-10">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
+        <div className="max-w-5xl mx-auto py-3">
           <div className="flex items-start justify-between gap-4">
             <div className="min-w-0">
               <button
@@ -630,7 +630,7 @@ export default function EditQuotePage() {
         </div>
       </header>
 
-      <main className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      <main className="max-w-5xl mx-auto py-6">
 
         {/* Barre de progression */}
         {status !== "refused" && status !== "rejected" && (

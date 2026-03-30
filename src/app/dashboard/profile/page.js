@@ -173,7 +173,7 @@ export default function ProfilePage() {
   return (
     <div className="min-h-screen bg-gray-50">
       <header className="bg-white border-b border-gray-200 sticky top-0 z-10">
-        <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div>
           <div className="flex items-center gap-4 h-16">
             <button onClick={() => router.push("/dashboard")} className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors">
               <ArrowLeft className="w-4 h-4" /><span className="text-sm font-medium">Retour</span>
@@ -186,7 +186,7 @@ export default function ProfilePage() {
         </div>
       </header>
 
-      <main className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+      <main className="py-6 space-y-6">
         {success && (
           <div className="p-3 bg-green-50 border border-green-200 rounded-lg text-green-700 text-sm">
             Profil mis a jour avec succes !

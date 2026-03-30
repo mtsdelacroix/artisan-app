@@ -3,7 +3,7 @@
 export const DS = {
   // Layout
   page: "min-h-screen bg-[#F7F8FA]",
-  container: "max-w-lg mx-auto px-5 pb-28",
+  container: "max-w-lg mx-auto",
 
   // Cards — soft shadow, no heavy borders
   card: "bg-white rounded-2xl p-5",

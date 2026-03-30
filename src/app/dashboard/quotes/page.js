@@ -267,7 +267,7 @@ export default function QuotesPage() {
         </div>
 
         {/* ── Filter chips (scrollable) ── */}
-        <div className="flex gap-2 mb-6 overflow-x-auto pb-1 -mx-5 px-5 scrollbar-hide">
+        <div className="flex gap-2 mb-6 overflow-x-auto pb-1 -mx-4 px-4 scrollbar-hide">
           {FILTERS.map(f => {
             const count = f.value === "all" ? quotes.length : quotes.filter(q => q.status === f.value).length
             const active = filter === f.value
