@@ -291,7 +291,7 @@ export default function DashboardPage() {
         )
       })()}
 
-      <div className={DS.container}>
+      <div>
         {/* ── Header ── */}
         <div className="pt-8 pb-1 animate-fadeUp">
           <div className="flex items-center justify-between">

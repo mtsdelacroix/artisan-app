@@ -241,7 +241,7 @@ export default function QuotesPage() {
         <p className="text-sm" style={{ color: brandColor }}>{confirmSend?.client_email}</p>
       </ConfirmModal>
 
-      <div className={DS.container}>
+      <div>
         {/* ── Header ── */}
         <div className="pt-8">
           <PageHeader

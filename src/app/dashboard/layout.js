@@ -45,7 +45,7 @@ export default function DashboardLayout({ children }) {
 
   return (
     <>
-      <main className="main-content px-4 pt-4 max-w-lg mx-auto w-full">{children}</main>
+      <main className="main-content px-5 pt-4 max-w-lg mx-auto w-full">{children}</main>
       <AgentModal />
 
       {/* Bottom Navigation — glassmorphism */}
