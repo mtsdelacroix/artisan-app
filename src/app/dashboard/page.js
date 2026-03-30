@@ -381,36 +381,61 @@ export default function DashboardPage() {
         </div>
 
         {/* ── KPI Grid 2x2 ── */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', width: '100%', marginBottom: '24px' }}>
-          <StatCard
-            label="CA ce mois"
-            value={dashStats ? formatPrice(dashStats.monthlyRevenue) : "—"}
-            subtext={dashStats?.prevMonthRevenue > 0 ? `${dashStats.revenueGrowth >= 0 ? "+" : ""}${dashStats.revenueGrowth}%` : undefined}
-            icon={TrendingUp}
-            brandColor={brandColor}
-          />
-          <StatCard
-            label="Taux acceptation"
-            value={dashStats ? `${dashStats.acceptanceRate}%` : "—"}
-            subtext={`sur ${dashStats?.periodTotal ?? 0} devis`}
-            icon={CheckCircle}
-            brandColor={brandColor}
-          />
-          <StatCard
-            label="En attente"
-            value={dashStats ? dashStats.waitingQuotes : "—"}
-            subtext="devis sans réponse"
-            icon={Clock}
-            brandColor={brandColor}
-          />
-          <StatCard
-            label="Délai ouverture"
-            value={dashStats?.avgViewHours != null ? `${dashStats.avgViewHours}h` : "—"}
-            subtext="délai moyen lecture"
-            icon={Eye}
-            brandColor={brandColor}
-          />
-        </div>
+        {(() => {
+          const kpiCardStyle = {
+            background: 'white',
+            borderRadius: '16px',
+            padding: '14px',
+            boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
+            minWidth: 0,
+            overflow: 'hidden',
+            boxSizing: 'border-box',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '6px',
+          }
+          const kpiLabel = {
+            fontSize: '10px', fontWeight: 600, color: '#94A3B8',
+            textTransform: 'uppercase', letterSpacing: '0.04em',
+            overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', margin: 0,
+          }
+          const kpiValue = {
+            fontSize: '22px', fontWeight: 800, color: '#0F172A', lineHeight: 1.1,
+            overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', margin: 0,
+          }
+          const kpiSub = {
+            fontSize: '11px', color: '#94A3B8',
+            overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', margin: 0,
+          }
+          return (
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', width: '100%', marginBottom: '16px', boxSizing: 'border-box' }}>
+              <div style={kpiCardStyle}>
+                <p style={kpiLabel}>CA ce mois</p>
+                <p style={kpiValue}>{dashStats ? formatPrice(dashStats.monthlyRevenue) : "—"}</p>
+                {dashStats?.prevMonthRevenue > 0 && (
+                  <p style={{ ...kpiSub, color: dashStats.revenueGrowth >= 0 ? '#059669' : '#DC2626' }}>
+                    {dashStats.revenueGrowth >= 0 ? "↑" : "↓"} {Math.abs(dashStats.revenueGrowth)}%
+                  </p>
+                )}
+              </div>
+              <div style={kpiCardStyle}>
+                <p style={kpiLabel}>Taux acceptation</p>
+                <p style={kpiValue}>{dashStats ? `${dashStats.acceptanceRate}%` : "—"}</p>
+                <p style={kpiSub}>sur {dashStats?.periodTotal ?? 0} devis</p>
+              </div>
+              <div style={kpiCardStyle}>
+                <p style={kpiLabel}>En attente</p>
+                <p style={kpiValue}>{dashStats ? dashStats.waitingQuotes : "—"}</p>
+                <p style={kpiSub}>devis sans réponse</p>
+              </div>
+              <div style={kpiCardStyle}>
+                <p style={kpiLabel}>Délai ouverture</p>
+                <p style={kpiValue}>{dashStats?.avgViewHours != null ? `${dashStats.avgViewHours}h` : "—"}</p>
+                <p style={kpiSub}>délai moyen lecture</p>
+              </div>
+            </div>
+          )
+        })()}
 
         {/* ── Bar Chart ── */}
         <div className="bg-white rounded-2xl p-5 mb-6" style={cardShadow}>
