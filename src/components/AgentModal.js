@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation"
 import { supabase } from "@/lib/supabase"
 import { Loader2, Mic, MicOff, CheckCircle, XCircle, AlertCircle, X, Send } from "lucide-react"
 
-const SILENCE_MS = 2000
+const SILENCE_MS = 5000
 
 export default function AgentModal() {
   const router = useRouter()
@@ -315,7 +315,7 @@ export default function AgentModal() {
                     </div>
                   )}
 
-                  <p className="text-xs text-gray-400">Arrêt automatique après 2 secondes de silence</p>
+                  <p className="text-xs text-gray-400">Arrêt automatique après 5 secondes de silence</p>
                 </div>
               )}
 
