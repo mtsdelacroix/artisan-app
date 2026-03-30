@@ -5,27 +5,27 @@ import { buildQuoteHtml } from "../generate-pdf/template.js"
 import { withRateLimit } from "@/lib/withRateLimit"
 import { emailRatelimit } from "@/lib/ratelimit"
 
-const LOCAL_CHROME_PATH =
-  process.env.CHROME_PATH ||
-  "/Users/admin/Desktop/Google Chrome.app/Contents/MacOS/Google Chrome"
+const CHROMIUM_PACK_URL =
+  "https://github.com/Sparticuz/chromium/releases/download/v131.0.1/chromium-v131.0.1-pack.tar"
 
 async function getBrowser() {
   if (process.env.NODE_ENV === "production") {
-    const chromium = (await import("@sparticuz/chromium")).default
+    const chromium = (await import("@sparticuz/chromium-min")).default
     const puppeteer = (await import("puppeteer-core")).default
+    chromium.setGraphicsMode = false
+    const executablePath = await chromium.executablePath(CHROMIUM_PACK_URL)
     return puppeteer.launch({
       args: chromium.args,
       defaultViewport: chromium.defaultViewport,
-      executablePath: await chromium.executablePath(),
+      executablePath,
       headless: chromium.headless,
     })
   }
 
-  const puppeteer = (await import("puppeteer-core")).default
-  return puppeteer.launch({
-    args: ["--no-sandbox", "--disable-setuid-sandbox"],
-    executablePath: LOCAL_CHROME_PATH,
+  const puppeteer = await import("puppeteer")
+  return puppeteer.default.launch({
     headless: true,
+    args: ["--no-sandbox", "--disable-setuid-sandbox"],
   })
 }
 
