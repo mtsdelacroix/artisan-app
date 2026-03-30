@@ -312,8 +312,12 @@ export default function DashboardPage() {
 
         {/* ── Hero CA card (Qonto style) ── */}
         <div
-          className="rounded-2xl p-6 mt-6 mb-6 relative overflow-hidden animate-fadeUp"
+          className="rounded-2xl mt-6 mb-6 relative overflow-hidden animate-fadeUp"
           style={{
+            padding: '20px',
+            paddingLeft: '20px',
+            width: '100%',
+            boxSizing: 'border-box',
             background: `linear-gradient(135deg, ${brandColor}08, transparent)`,
             ...cardShadow,
           }}
@@ -377,7 +381,7 @@ export default function DashboardPage() {
         </div>
 
         {/* ── KPI Grid 2x2 ── */}
-        <div className="grid grid-cols-2 gap-3 mb-6">
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', width: '100%', marginBottom: '24px' }}>
           <StatCard
             label="CA ce mois"
             value={dashStats ? formatPrice(dashStats.monthlyRevenue) : "—"}
@@ -412,19 +416,21 @@ export default function DashboardPage() {
         <div className="bg-white rounded-2xl p-5 mb-6" style={cardShadow}>
           <p className={DS.sectionTitle}>CA — 6 derniers mois</p>
           {dashStats?.monthlyData ? (
-            <ResponsiveContainer width="100%" height={160}>
-              <BarChart data={dashStats.monthlyData} barSize={20}>
-                <XAxis dataKey="month" tick={{ fontSize: 11, fill: "#94A3B8", fontWeight: 500 }} axisLine={false} tickLine={false} />
-                <YAxis hide />
-                <Tooltip
-                  formatter={(value) => [`${value.toLocaleString("fr-BE")} €`, "CA"]}
-                  contentStyle={{ borderRadius: 12, border: "1px solid #E8ECF0", fontSize: 12, fontWeight: 600 }}
-                />
-                <Bar dataKey="revenue" fill={brandColor} radius={[6, 6, 0, 0]} opacity={0.9} />
-              </BarChart>
-            </ResponsiveContainer>
+            <div style={{ width: '100%', height: '180px' }}>
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={dashStats.monthlyData} barSize={20} margin={{ top: 10, right: 0, left: -20, bottom: 0 }}>
+                  <XAxis dataKey="month" tick={{ fontSize: 11, fill: "#94A3B8", fontWeight: 500 }} axisLine={false} tickLine={false} />
+                  <YAxis hide={true} />
+                  <Tooltip
+                    formatter={(value) => [`${value.toLocaleString("fr-BE")} €`, "CA"]}
+                    contentStyle={{ borderRadius: 12, border: 'none', boxShadow: '0 4px 16px rgba(0,0,0,0.12)', fontSize: 13 }}
+                  />
+                  <Bar dataKey="revenue" fill={brandColor} radius={[6, 6, 0, 0]} opacity={0.9} minPointSize={4} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
           ) : (
-            <div className="h-[160px] flex items-center justify-center text-[#CBD5E1] text-sm">Chargement...</div>
+            <div style={{ height: '180px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#CBD5E1', fontSize: '14px' }}>Chargement...</div>
           )}
         </div>
 

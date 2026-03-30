@@ -4,7 +4,7 @@ export default function StatCard({ label, value, subtext, icon: Icon, brandColor
   return (
     <div
       className="bg-white rounded-2xl p-5 card-hover"
-      style={cardShadow}
+      style={{ ...cardShadow, minWidth: 0, overflow: 'hidden', boxSizing: 'border-box' }}
     >
       <div className="flex items-center justify-between mb-3">
         <p className="text-[11px] font-semibold uppercase tracking-widest text-[#94A3B8]">{label}</p>
