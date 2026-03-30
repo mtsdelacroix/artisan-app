@@ -1,4 +1,10 @@
 {
+  "functions": {
+    "src/app/api/generate-pdf/route.js": {
+      "memory": 1024,
+      "maxDuration": 30
+    }
+  },
   "crons": [
     {
       "path": "/api/cron/send-reminders",

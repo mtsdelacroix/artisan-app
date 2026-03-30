@@ -3,31 +3,28 @@ import { createClient } from "@supabase/supabase-js"
 import { buildQuoteHtml } from "./template.js"
 import { withRateLimit } from "@/lib/withRateLimit"
 import { pdfRatelimit } from "@/lib/ratelimit"
+import puppeteerCore from "puppeteer-core"
+import chromium from "@sparticuz/chromium"
 
-// Chemin Chrome local macOS (fallback dev)
-const LOCAL_CHROME_PATH =
-  process.env.CHROME_PATH ||
-  "/Users/admin/Desktop/Google Chrome.app/Contents/MacOS/Google Chrome"
+const isDev = process.env.NODE_ENV === "development"
 
 async function getBrowser() {
-  // En production (serverless) → @sparticuz/chromium
-  if (process.env.NODE_ENV === "production") {
-    const chromium = (await import("@sparticuz/chromium")).default
-    const puppeteer = (await import("puppeteer-core")).default
-    return puppeteer.launch({
-      args: chromium.args,
-      defaultViewport: chromium.defaultViewport,
-      executablePath: await chromium.executablePath(),
-      headless: chromium.headless,
+  if (isDev) {
+    // En local → puppeteer complet avec browser intégré
+    const puppeteer = await import("puppeteer")
+    return puppeteer.default.launch({
+      headless: true,
+      args: ["--no-sandbox", "--disable-setuid-sandbox"],
     })
   }
 
-  // En développement local → Chrome système
-  const puppeteer = (await import("puppeteer-core")).default
-  return puppeteer.launch({
-    args: ["--no-sandbox", "--disable-setuid-sandbox"],
-    executablePath: LOCAL_CHROME_PATH,
-    headless: true,
+  // En production Vercel → puppeteer-core + @sparticuz/chromium
+  const executablePath = await chromium.executablePath()
+  return puppeteerCore.launch({
+    args: chromium.args,
+    defaultViewport: chromium.defaultViewport,
+    executablePath,
+    headless: chromium.headless,
   })
 }
 
