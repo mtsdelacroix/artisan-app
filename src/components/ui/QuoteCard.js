@@ -1,5 +1,5 @@
-import StatusBadge from "./StatusBadge"
-import { FileText, Send, Camera, Copy, MoreHorizontal, Loader2, Eye } from "lucide-react"
+import { STATUS_CONFIG } from "./StatusBadge"
+import { Send, Camera, Copy, MoreHorizontal, Loader2, Eye } from "lucide-react"
 
 export default function QuoteCard({
   quote,
@@ -13,8 +13,6 @@ export default function QuoteCard({
   brandColor,
   index = 0,
 }) {
-  const bc = brandColor || "#2563eb"
-
   const timeAgo = (dateStr) => {
     const diff = Date.now() - new Date(dateStr).getTime()
     const days = Math.floor(diff / 86400000)
@@ -25,88 +23,189 @@ export default function QuoteCard({
     return new Date(dateStr).toLocaleDateString("fr-BE")
   }
 
+  const status = STATUS_CONFIG[quote.status] || STATUS_CONFIG.draft
+  const price = formatPrice
+    ? formatPrice(quote.total_incl_vat)
+    : `${quote.total_incl_vat?.toFixed(2)} €`
+
+  const actionBtnStyle = {
+    width: 36, height: 36,
+    borderRadius: 10,
+    border: "none",
+    background: "transparent",
+    display: "flex", alignItems: "center", justifyContent: "center",
+    cursor: "pointer",
+    color: "#94A3B8",
+    transition: "background 0.15s, color 0.15s",
+    flexShrink: 0,
+  }
+
   return (
-    <div
-      className={`bg-white rounded-2xl p-4 card-hover animate-fadeUp opacity-0 border border-gray-100/80 stagger-${Math.min(index + 1, 10)}`}
-      style={{ boxShadow: "0 1px 3px rgba(0,0,0,0.05), 0 4px 12px rgba(0,0,0,0.03)" }}
-    >
-      {/* Header: icon + info + price */}
-      <div className="flex items-start gap-3.5">
-        {/* Document icon — larger */}
-        <div
-          className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0"
-          style={{ backgroundColor: `${bc}12` }}
-        >
-          <FileText size={22} style={{ color: bc }} />
-        </div>
+    <div style={{
+      background: "#FFFFFF",
+      borderRadius: 20,
+      padding: 20,
+      boxShadow: "0 2px 8px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04)",
+      border: "1.5px solid #F5F0E8",
+      minWidth: 0,
+      overflow: "hidden",
+    }}>
 
-        {/* Info */}
-        <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2 mb-0.5">
-            <span className="text-[11px] font-semibold text-gray-400 uppercase tracking-wide">{quoteRef}</span>
-            {quote.viewed_at && <Eye className="w-3 h-3 text-amber-400" />}
-            {quote.internal_notes && <span className="text-[10px]">📝</span>}
-            {(quote.job_photos?.[0]?.count ?? 0) > 0 && <span className="text-[10px]">📸</span>}
-          </div>
-          <p className="font-semibold text-gray-900 truncate text-sm">{quote.client_name}</p>
-          <p className="text-sm text-gray-500 truncate mt-0.5">{quote.title}</p>
-          <span className="text-[11px] text-gray-400 mt-1 block">{timeAgo(quote.created_at)}</span>
+      {/* Ligne 1 : référence + montant */}
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 6, minWidth: 0 }}>
+          <span style={{
+            fontSize: 11, fontWeight: 700,
+            color: "#94A3B8", letterSpacing: "0.08em",
+            textTransform: "uppercase", whiteSpace: "nowrap",
+          }}>
+            {quoteRef}
+          </span>
+          {quote.viewed_at && (
+            <Eye size={12} style={{ color: "#F59E0B", flexShrink: 0 }} />
+          )}
+          {quote.internal_notes && (
+            <span style={{ fontSize: 11, flexShrink: 0 }}>📝</span>
+          )}
+          {(quote.job_photos?.[0]?.count ?? 0) > 0 && (
+            <span style={{ fontSize: 11, flexShrink: 0 }}>📸</span>
+          )}
         </div>
-
-        {/* Price — right aligned */}
-        <div className="shrink-0 text-right">
-          <p className="text-lg font-bold text-gray-900 tracking-tight">
-            {formatPrice ? formatPrice(quote.total_incl_vat) : `${quote.total_incl_vat?.toFixed(2)} €`}
-          </p>
-        </div>
+        <span style={{
+          fontSize: 18, fontWeight: 800,
+          color: "#0F172A", whiteSpace: "nowrap",
+          flexShrink: 0, marginLeft: 12,
+          fontFamily: "'Bebas Neue', 'Figtree', sans-serif",
+          letterSpacing: "0.5px",
+        }}>
+          {price}
+        </span>
       </div>
 
-      {/* Actions + Status */}
-      <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-50">
-        <div className="flex items-center gap-1">
-          {onSend && (
-            <button
-              onClick={(e) => { e.stopPropagation(); onSend(quote) }}
-              disabled={sendingId === quote.id}
-              title="Envoyer le devis"
-              className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-150 ${
-                quote.client_email
-                  ? "text-gray-400 hover:text-blue-500 hover:bg-blue-50"
-                  : "text-gray-200 cursor-not-allowed"
-              }`}
-            >
-              {sendingId === quote.id ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />}
-            </button>
-          )}
-          {onPhotos && (
-            <button
-              onClick={(e) => { e.stopPropagation(); onPhotos(quote) }}
-              title="Photos du chantier"
-              className="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:text-purple-500 hover:bg-purple-50 transition-all duration-150"
-            >
-              <Camera size={14} />
-            </button>
-          )}
-          {onNotes && (
-            <button
-              onClick={(e) => { e.stopPropagation(); onNotes(quote) }}
-              title="Dupliquer"
-              className="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:text-green-500 hover:bg-green-50 transition-all duration-150"
-            >
-              <Copy size={14} />
-            </button>
-          )}
-          {onMenu && (
-            <button
-              onClick={(e) => { e.stopPropagation(); onMenu(e, quote) }}
-              title="Plus d'actions"
-              className="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-all duration-150"
-            >
-              <MoreHorizontal size={14} />
-            </button>
-          )}
-        </div>
-        <StatusBadge status={quote.status} />
+      {/* Ligne 2 : nom client */}
+      <p style={{
+        fontSize: 16, fontWeight: 700,
+        color: "#0F172A", margin: "0 0 4px 0",
+        overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+      }}>
+        {quote.client_name}
+      </p>
+
+      {/* Ligne 3 : titre devis */}
+      <p style={{
+        fontSize: 13, color: "#64748B",
+        margin: "0 0 14px 0",
+        overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+      }}>
+        {quote.title}
+      </p>
+
+      {/* Ligne 4 : date + badge statut */}
+      <div style={{
+        display: "flex", justifyContent: "space-between",
+        alignItems: "center", marginBottom: 16,
+        gap: 8,
+      }}>
+        <span style={{ fontSize: 12, color: "#94A3B8", whiteSpace: "nowrap" }}>
+          {timeAgo(quote.created_at)}
+        </span>
+        <span style={{
+          display: "inline-flex", alignItems: "center", gap: 6,
+          padding: "4px 12px", borderRadius: 20,
+          fontSize: 12, fontWeight: 700,
+          backgroundColor: status.bg, color: status.text,
+          whiteSpace: "nowrap", flexShrink: 0,
+          fontFamily: "'Figtree', sans-serif",
+        }}>
+          <span style={{
+            width: 6, height: 6, borderRadius: "50%",
+            backgroundColor: status.dot, flexShrink: 0,
+          }} />
+          {status.label}
+        </span>
+      </div>
+
+      {/* Séparateur */}
+      <div style={{ height: 1, background: "#F5F0E8", marginBottom: 14 }} />
+
+      {/* Ligne 5 : actions */}
+      <div style={{ display: "flex", alignItems: "center", gap: 2 }}>
+        {onSend && (
+          <button
+            onClick={(e) => { e.stopPropagation(); onSend(quote) }}
+            disabled={sendingId === quote.id}
+            title="Envoyer le devis"
+            style={{
+              ...actionBtnStyle,
+              opacity: sendingId === quote.id ? 0.5 : 1,
+            }}
+            onMouseEnter={e => {
+              if (sendingId !== quote.id) {
+                e.currentTarget.style.background = "rgba(245,158,11,0.1)"
+                e.currentTarget.style.color = "#F59E0B"
+              }
+            }}
+            onMouseLeave={e => {
+              e.currentTarget.style.background = "transparent"
+              e.currentTarget.style.color = "#94A3B8"
+            }}
+          >
+            {sendingId === quote.id
+              ? <Loader2 size={15} style={{ animation: "spin 1s linear infinite" }} />
+              : <Send size={15} />}
+          </button>
+        )}
+        {onPhotos && (
+          <button
+            onClick={(e) => { e.stopPropagation(); onPhotos(quote) }}
+            title="Photos du chantier"
+            style={actionBtnStyle}
+            onMouseEnter={e => {
+              e.currentTarget.style.background = "rgba(245,158,11,0.1)"
+              e.currentTarget.style.color = "#F59E0B"
+            }}
+            onMouseLeave={e => {
+              e.currentTarget.style.background = "transparent"
+              e.currentTarget.style.color = "#94A3B8"
+            }}
+          >
+            <Camera size={15} />
+          </button>
+        )}
+        {onNotes && (
+          <button
+            onClick={(e) => { e.stopPropagation(); onNotes(quote) }}
+            title="Dupliquer"
+            style={actionBtnStyle}
+            onMouseEnter={e => {
+              e.currentTarget.style.background = "rgba(245,158,11,0.1)"
+              e.currentTarget.style.color = "#F59E0B"
+            }}
+            onMouseLeave={e => {
+              e.currentTarget.style.background = "transparent"
+              e.currentTarget.style.color = "#94A3B8"
+            }}
+          >
+            <Copy size={15} />
+          </button>
+        )}
+        {onMenu && (
+          <button
+            onClick={(e) => { e.stopPropagation(); onMenu(e, quote) }}
+            title="Plus d'actions"
+            style={actionBtnStyle}
+            onMouseEnter={e => {
+              e.currentTarget.style.background = "rgba(245,158,11,0.1)"
+              e.currentTarget.style.color = "#F59E0B"
+            }}
+            onMouseLeave={e => {
+              e.currentTarget.style.background = "transparent"
+              e.currentTarget.style.color = "#94A3B8"
+            }}
+          >
+            <MoreHorizontal size={15} />
+          </button>
+        )}
       </div>
     </div>
   )
