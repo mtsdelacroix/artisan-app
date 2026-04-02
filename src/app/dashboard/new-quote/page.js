@@ -5,7 +5,7 @@ import { supabase } from "@/lib/supabase"
 import { useRouter } from "next/navigation"
 import {
   ArrowLeft, Plus, Trash2, Loader2, User, FileText, Calculator,
-  Mic, MicOff, Sparkles, Search, BookUser, X, CheckCircle,
+  Mic, MicOff, Sparkles, Search, BookUser, X, CheckCircle, Building2,
 } from "lucide-react"
 
 const ACCENT = "#F59E0B"
@@ -95,6 +95,21 @@ export default function NewQuotePage() {
   const [transcript, setTranscript] = useState("")
   const [voiceSummary, setVoiceSummary] = useState(null)
   const recognitionRef = useRef(null)
+
+  // Confirmation vocale interactive
+  const [confirmMode, setConfirmMode] = useState(false)
+  const [confirmFields, setConfirmFields] = useState([])
+  const [confirmIndex, setConfirmIndex] = useState(0)
+  const [pendingData, setPendingData] = useState(null)
+  const [isConfirmListening, setIsConfirmListening] = useState(false)
+  const [confirmTranscript, setConfirmTranscript] = useState("")
+  const confirmRecognitionRef = useRef(null)
+
+  // BCE lookup
+  const [bceResults, setBceResults] = useState([])
+  const [bceLoading, setBceLoading] = useState(false)
+  const [showBceDrop, setShowBceDrop] = useState(false)
+  const [bceQuery, setBceQuery] = useState("")
 
   useEffect(() => {
     setMounted(true)
@@ -264,6 +279,124 @@ export default function NewQuotePage() {
 
   const stopListening = () => { if (recognitionRef.current) recognitionRef.current.stop() }
 
+  // ── BCE Lookup ──────────────────────────────────────────────────────
+  const handleBCELookup = async (query) => {
+    if (!query || query.trim().length < 2) return
+    setBceLoading(true)
+    setBceResults([])
+    setShowBceDrop(true)
+    try {
+      const res = await fetch(`/api/bce-lookup?query=${encodeURIComponent(query.trim())}`)
+      const data = await res.json()
+      setBceResults(Array.isArray(data) ? data : [])
+    } catch {
+      setBceResults([])
+    }
+    setBceLoading(false)
+  }
+
+  const selectBCEResult = (company) => {
+    if (company.name) setClientName(company.name)
+    if (company.vat) setClientVatNumber(company.vat)
+    if (company.address) setClientAddress(company.address)
+    setBceResults([])
+    setShowBceDrop(false)
+    setBceQuery("")
+    clearClientSelection()
+  }
+
+  // ── Confirmation vocale interactive ─────────────────────────────────
+  const fillFormFromData = (data) => {
+    if (data.lines?.length > 0) {
+      setItems(data.lines.map(l => ({ label: l.description, quantity: l.quantity, unit_price: l.unit_price, vat_rate: l.tva_rate !== undefined ? l.tva_rate : null })))
+    }
+    if (data.title && !title) setTitle(data.title)
+    if (data.description && !description) setDescription(data.description)
+    if (data.client_name) setClientName(data.client_name)
+    if (data.client_email) setClientEmail(data.client_email)
+    if (data.client_phone) setClientPhone(data.client_phone)
+    if (data.client_address) setClientAddress(data.client_address)
+    else if (data.detected_city && !clientAddress) setClientAddress(data.detected_city)
+    if (data.client_vat_number) setClientVatNumber(data.client_vat_number)
+    if (data.notes && !notes) setNotes(data.notes)
+    if (data.conditions) setConditions(data.conditions)
+    if (data.client_id) { setClientId(data.client_id); setSaveClient(false) }
+    setVoiceSummary({ linesCount: data.lines?.length || 0, detectedCity: data.detected_city, travelKm: data.travel_distance_km, travelCost: data.travel_cost })
+  }
+
+  const startConfirmListening = () => {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition
+    if (!SpeechRecognition) return
+    const recognition = new SpeechRecognition()
+    recognition.lang = "fr-BE"
+    recognition.continuous = false
+    recognition.interimResults = false
+    confirmRecognitionRef.current = recognition
+    recognition.onresult = (e) => {
+      const text = e.results[0]?.[0]?.transcript || ""
+      setConfirmTranscript(text)
+      handleConfirmAnswer(text)
+    }
+    recognition.onerror = () => setIsConfirmListening(false)
+    recognition.onend = () => setIsConfirmListening(false)
+    recognition.start()
+    setIsConfirmListening(true)
+    setConfirmTranscript("")
+  }
+
+  const handleConfirmAnswer = async (userResponse) => {
+    const currentField = confirmFields[confirmIndex]
+    if (!currentField) return
+
+    try {
+      const res = await fetch("/api/analyze-confirmation", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          question: currentField.question,
+          originalValue: currentField.value,
+          userResponse,
+        }),
+      })
+      const analysis = await res.json()
+
+      const updatedData = { ...pendingData }
+      if (!analysis.confirmed) {
+        updatedData[currentField.field] = analysis.correctedValue
+        setPendingData(updatedData)
+      }
+
+      const nextIndex = confirmIndex + 1
+      if (nextIndex < confirmFields.length) {
+        setConfirmIndex(nextIndex)
+        setConfirmTranscript("")
+      } else {
+        fillFormFromData(updatedData)
+        setConfirmMode(false)
+        setConfirmFields([])
+        setConfirmIndex(0)
+        setPendingData(null)
+      }
+    } catch {
+      // En cas d'erreur, on confirme et on passe au suivant
+      const nextIndex = confirmIndex + 1
+      if (nextIndex < confirmFields.length) {
+        setConfirmIndex(nextIndex)
+      } else {
+        fillFormFromData(pendingData)
+        setConfirmMode(false)
+      }
+    }
+  }
+
+  const skipConfirmation = () => {
+    fillFormFromData(pendingData)
+    setConfirmMode(false)
+    setConfirmFields([])
+    setConfirmIndex(0)
+    setPendingData(null)
+  }
+
   const handleVoiceProcessing = async (text) => {
     setIsProcessing(true)
     try {
@@ -282,21 +415,15 @@ export default function NewQuotePage() {
       })
       const data = await res.json()
       if (!res.ok || data.error) { alert("Erreur assistant vocal : " + (data.error || "inconnu")); setIsProcessing(false); return }
-      if (data.lines?.length > 0) {
-        setItems(data.lines.map(l => ({ label: l.description, quantity: l.quantity, unit_price: l.unit_price, vat_rate: l.tva_rate !== undefined ? l.tva_rate : null })))
+      if (data.needs_confirmation && data.confirmation_fields?.length > 0) {
+        // Mode confirmation interactive
+        setPendingData(data)
+        setConfirmFields(data.confirmation_fields)
+        setConfirmIndex(0)
+        setConfirmMode(true)
+      } else {
+        fillFormFromData(data)
       }
-      if (data.title && !title) setTitle(data.title)
-      if (data.description && !description) setDescription(data.description)
-      if (data.client_name && !clientName) setClientName(data.client_name)
-      if (data.client_email && !clientEmail) setClientEmail(data.client_email)
-      if (data.client_phone && !clientPhone) setClientPhone(data.client_phone)
-      if (data.client_address && !clientAddress) setClientAddress(data.client_address)
-      else if (data.detected_city && !clientAddress) setClientAddress(data.detected_city)
-      if (data.client_vat_number) setClientVatNumber(data.client_vat_number)
-      if (data.notes && !notes) setNotes(data.notes)
-      if (data.conditions) setConditions(data.conditions)
-      if (data.client_id) { setClientId(data.client_id); setSaveClient(false) }
-      setVoiceSummary({ linesCount: data.lines?.length || 0, detectedCity: data.detected_city, travelKm: data.travel_distance_km, travelCost: data.travel_cost })
     } catch (err) { alert("Erreur réseau : " + err.message) }
     setIsProcessing(false)
   }
@@ -764,14 +891,99 @@ export default function NewQuotePage() {
                 className="nq-input" style={inputStyle}
               />
             </div>
-            <div>
+            <div style={{ position: "relative" }}>
               <label style={labelStyle}>N° TVA client (B2B — optionnel)</label>
-              <input
-                type="text" value={clientVatNumber}
-                onChange={e => setClientVatNumber(e.target.value)}
-                placeholder="BE 0123.456.789"
-                className="nq-input" style={inputStyle}
-              />
+              <div style={{ display: "flex", gap: 8, position: "relative" }}>
+                <input
+                  type="text" value={clientVatNumber}
+                  onChange={e => { setClientVatNumber(e.target.value); setBceQuery(e.target.value) }}
+                  placeholder="BE 0123.456.789"
+                  className="nq-input" style={{ ...inputStyle, flex: 1 }}
+                />
+                <button
+                  type="button"
+                  onClick={() => handleBCELookup(clientVatNumber || clientName)}
+                  disabled={bceLoading}
+                  title="Rechercher via BCE (Banque Carrefour des Entreprises)"
+                  style={{
+                    height: 52, padding: "0 14px",
+                    background: ACCENT_LIGHT,
+                    border: `1.5px solid ${ACCENT_BORDER}`,
+                    borderRadius: 12,
+                    cursor: bceLoading ? "wait" : "pointer",
+                    display: "flex", alignItems: "center", gap: 6,
+                    whiteSpace: "nowrap",
+                    fontFamily: "'Figtree', sans-serif",
+                    fontSize: 13, fontWeight: 700,
+                    color: "#92400E",
+                    flexShrink: 0,
+                    transition: "background 0.15s",
+                  }}
+                >
+                  {bceLoading
+                    ? <Loader2 size={14} style={{ color: ACCENT, animation: "spin 1s linear infinite" }} />
+                    : <Building2 size={14} style={{ color: ACCENT }} />
+                  }
+                  BCE
+                </button>
+              </div>
+
+              {/* Dropdown résultats BCE */}
+              {showBceDrop && (bceLoading || bceResults.length > 0) && (
+                <div style={{
+                  position: "absolute", zIndex: 40, left: 0, right: 0, top: "calc(100% + 6px)",
+                  background: "#FFFFFF",
+                  borderRadius: 14,
+                  border: "1.5px solid #F5F0E8",
+                  boxShadow: "0 8px 24px rgba(0,0,0,0.10)",
+                  overflow: "hidden",
+                }}>
+                  {bceLoading ? (
+                    <div style={{ padding: "14px 16px", display: "flex", alignItems: "center", gap: 8 }}>
+                      <Loader2 size={14} style={{ color: ACCENT, animation: "spin 1s linear infinite" }} />
+                      <span style={{ fontFamily: "'Figtree', sans-serif", fontSize: 13, color: "#94A3B8" }}>Recherche BCE...</span>
+                    </div>
+                  ) : bceResults.length === 0 ? (
+                    <div style={{ padding: "14px 16px", fontFamily: "'Figtree', sans-serif", fontSize: 13, color: "#94A3B8", fontStyle: "italic" }}>
+                      Aucune entreprise trouvée
+                    </div>
+                  ) : (
+                    <>
+                      {bceResults.map((company, i) => (
+                        <button
+                          key={i}
+                          onMouseDown={() => selectBCEResult(company)}
+                          className="nq-client-result-btn"
+                        >
+                          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
+                            <p style={{ margin: 0, fontFamily: "'Figtree', sans-serif", fontSize: 14, fontWeight: 700, color: "#0F172A" }}>{company.name}</p>
+                            {!company.active && (
+                              <span style={{ fontSize: 11, background: "#FEE2E2", color: "#DC2626", borderRadius: 6, padding: "2px 6px", fontWeight: 700, flexShrink: 0 }}>Inactif</span>
+                            )}
+                          </div>
+                          <p style={{ margin: "3px 0 0 0", fontFamily: "'Figtree', sans-serif", fontSize: 12, color: "#94A3B8" }}>
+                            {[company.vat, company.address].filter(Boolean).join(" · ")}
+                          </p>
+                          {company.legal_form && (
+                            <p style={{ margin: "2px 0 0 0", fontFamily: "'Figtree', sans-serif", fontSize: 11, color: "#CBD5E1" }}>{company.legal_form}</p>
+                          )}
+                        </button>
+                      ))}
+                      <button
+                        onClick={() => { setBceResults([]); setShowBceDrop(false) }}
+                        style={{
+                          width: "100%", padding: "8px 16px",
+                          background: "#FAFAF8", border: "none",
+                          fontFamily: "'Figtree', sans-serif", fontSize: 12, color: "#94A3B8",
+                          cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
+                        }}
+                      >
+                        <X size={12} /> Fermer
+                      </button>
+                    </>
+                  )}
+                </div>
+              )}
             </div>
           </div>
 
@@ -1125,6 +1337,121 @@ export default function NewQuotePage() {
                   ))
               )}
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── MODAL CONFIRMATION VOCALE ── */}
+      {confirmMode && confirmFields.length > 0 && (
+        <div style={{
+          position: "fixed", inset: 0, zIndex: 60,
+          display: "flex", alignItems: "flex-end",
+          background: "rgba(0,0,0,0.5)",
+        }}>
+          <div style={{
+            width: "100%", maxWidth: 512,
+            margin: "0 auto",
+            background: "#FFFFFF",
+            borderRadius: "24px 24px 0 0",
+            padding: 24,
+            boxShadow: "0 -8px 40px rgba(0,0,0,0.15)",
+            paddingBottom: "calc(24px + env(safe-area-inset-bottom))",
+          }}>
+            {/* Progress */}
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
+              <div style={{ display: "flex", gap: 6 }}>
+                {confirmFields.map((_, i) => (
+                  <div key={i} style={{
+                    width: 28, height: 4, borderRadius: 2,
+                    background: i <= confirmIndex ? ACCENT : "#E2E8F0",
+                    transition: "background 0.2s",
+                  }} />
+                ))}
+              </div>
+              <span style={{ fontFamily: "'Figtree', sans-serif", fontSize: 12, color: "#94A3B8" }}>
+                {confirmIndex + 1}/{confirmFields.length}
+              </span>
+            </div>
+
+            {/* Question */}
+            <div style={{ textAlign: "center", marginBottom: 24 }}>
+              <div style={{
+                width: 48, height: 48, borderRadius: "50%",
+                background: ACCENT_LIGHT,
+                display: "flex", alignItems: "center", justifyContent: "center",
+                margin: "0 auto 14px",
+              }}>
+                <Mic size={20} style={{ color: ACCENT }} />
+              </div>
+              <p style={{
+                fontFamily: "'Figtree', sans-serif",
+                fontSize: 17, fontWeight: 700,
+                color: "#0F172A",
+                margin: 0, lineHeight: 1.4,
+              }}>
+                {confirmFields[confirmIndex]?.question}
+              </p>
+              {confirmTranscript && (
+                <p style={{
+                  marginTop: 10,
+                  fontFamily: "'Figtree', sans-serif",
+                  fontSize: 13, color: "#64748B", fontStyle: "italic",
+                }}>
+                  Entendu : "{confirmTranscript}"
+                </p>
+              )}
+            </div>
+
+            {/* Boutons */}
+            <div style={{ display: "flex", gap: 10, marginBottom: 12 }}>
+              <button
+                onClick={() => handleConfirmAnswer("oui")}
+                style={{
+                  flex: 1, height: 52,
+                  background: "linear-gradient(135deg, #F59E0B, #D97706)",
+                  border: "none", borderRadius: 14,
+                  fontFamily: "'Bebas Neue', sans-serif",
+                  fontSize: 18, letterSpacing: "0.08em",
+                  color: "white", cursor: "pointer",
+                  boxShadow: "0 4px 14px rgba(245,158,11,0.35)",
+                }}
+              >
+                ✓ OUI
+              </button>
+              <button
+                onClick={startConfirmListening}
+                disabled={isConfirmListening}
+                style={{
+                  flex: 1, height: 52,
+                  background: isConfirmListening ? "rgba(239,68,68,0.08)" : "#F1F5F9",
+                  border: isConfirmListening ? "1.5px solid rgba(239,68,68,0.3)" : "1.5px solid #E2E8F0",
+                  borderRadius: 14,
+                  fontFamily: "'Bebas Neue', sans-serif",
+                  fontSize: 18, letterSpacing: "0.08em",
+                  color: isConfirmListening ? "#DC2626" : "#64748B",
+                  cursor: "pointer",
+                  display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+                }}
+              >
+                {isConfirmListening
+                  ? <><div style={{ width: 8, height: 8, borderRadius: "50%", background: "#EF4444", animation: "ping 1.2s ease-out infinite" }} /> ÉCOUTE...</>
+                  : <><Mic size={16} /> CORRIGER</>
+                }
+              </button>
+            </div>
+
+            <button
+              onClick={skipConfirmation}
+              style={{
+                width: "100%", height: 40,
+                background: "none", border: "none",
+                fontFamily: "'Figtree', sans-serif",
+                fontSize: 13, color: "#94A3B8",
+                cursor: "pointer",
+              }}
+            >
+              Ignorer les vérifications →
+            </button>
           </div>
         </div>
       )}

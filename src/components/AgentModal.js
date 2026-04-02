@@ -215,7 +215,7 @@ export default function AgentModal() {
     setTimeout(() => startListening(), 100)
   }
 
-  const brandColor = profile?.brand_color || "#2563eb"
+  const brandColor = profile?.brand_color || "#F59E0B"
 
   return (
     <>

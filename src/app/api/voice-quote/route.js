@@ -188,6 +188,39 @@ Format de réponse JSON strict (respecte EXACTEMENT ces champs) :
       }
     }
 
+    // Détection des champs sensibles à confirmer
+    const sensitiveFields = []
+
+    if (result.client_email) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+      if (!emailRegex.test(result.client_email)) {
+        sensitiveFields.push({
+          field: "client_email",
+          value: result.client_email,
+          question: `J'ai compris l'email : "${result.client_email}" — c'est correct ?`,
+        })
+      }
+    }
+
+    if (result.client_name && !result.client_id) {
+      sensitiveFields.push({
+        field: "client_name",
+        value: result.client_name,
+        question: `Nouveau client : "${result.client_name}" — orthographe correcte ?`,
+      })
+    }
+
+    if (result.client_address && !/\d{4}/.test(result.client_address)) {
+      sensitiveFields.push({
+        field: "client_address",
+        value: result.client_address,
+        question: `Adresse : "${result.client_address}" — c'est bien ça ?`,
+      })
+    }
+
+    result.needs_confirmation = sensitiveFields.length > 0
+    result.confirmation_fields = sensitiveFields
+
     return NextResponse.json(result)
   } catch (error) {
     console.error("voice-quote error:", error)

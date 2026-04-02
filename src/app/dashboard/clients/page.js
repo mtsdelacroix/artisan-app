@@ -5,7 +5,7 @@ import { supabase } from "@/lib/supabase"
 import { useRouter } from "next/navigation"
 import {
   Plus, Search, Edit2, Trash2, Loader2,
-  X, Save, ChevronRight, Phone, Mail, MapPin
+  X, Save, ChevronRight, Phone, Mail, MapPin, Building2
 } from "lucide-react"
 
 const EMPTY_FORM = { name: "", email: "", phone: "", address: "", vat_number: "", notes: "" }
@@ -23,7 +23,36 @@ export default function ClientsPage() {
   const [form, setForm]                 = useState(EMPTY_FORM)
   const [isSaving, setIsSaving]         = useState(false)
   const [deleteConfirm, setDeleteConfirm] = useState(null)
+  const [bceResults, setBceResults]       = useState([])
+  const [bceLoading, setBceLoading]       = useState(false)
+  const [showBceDrop, setShowBceDrop]     = useState(false)
   const router = useRouter()
+
+  const handleBCELookup = async (query) => {
+    if (!query || query.trim().length < 2) return
+    setBceLoading(true)
+    setBceResults([])
+    setShowBceDrop(true)
+    try {
+      const res = await fetch(`/api/bce-lookup?query=${encodeURIComponent(query.trim())}`)
+      const data = await res.json()
+      setBceResults(Array.isArray(data) ? data : [])
+    } catch {
+      setBceResults([])
+    }
+    setBceLoading(false)
+  }
+
+  const selectBCEResult = (company) => {
+    setForm(f => ({
+      ...f,
+      name: company.name || f.name,
+      vat_number: company.vat || f.vat_number,
+      address: company.address || f.address,
+    }))
+    setBceResults([])
+    setShowBceDrop(false)
+  }
 
   useEffect(() => {
     setMounted(true)
@@ -260,11 +289,101 @@ export default function ClientsPage() {
                 placeholder="Rue de la Gare 12, 1420 Braine" />
             </div>
 
-            <div className="cp-modal-field">
+            <div className="cp-modal-field" style={{ position: "relative" }}>
               <label style={labelStyle}>N° TVA (B2B)</label>
-              <input className="cp-modal-input" type="text" value={form.vat_number}
-                onChange={e => setForm(f => ({ ...f, vat_number: e.target.value }))}
-                placeholder="BE 0123.456.789" />
+              <div style={{ display: "flex", gap: 8 }}>
+                <input
+                  className="cp-modal-input" type="text" value={form.vat_number}
+                  onChange={e => setForm(f => ({ ...f, vat_number: e.target.value }))}
+                  placeholder="BE 0123.456.789"
+                  style={{ flex: 1 }}
+                />
+                <button
+                  type="button"
+                  onClick={() => handleBCELookup(form.vat_number || form.name)}
+                  disabled={bceLoading}
+                  title="Rechercher via BCE"
+                  style={{
+                    height: 44, padding: "0 12px",
+                    background: ACCENT_LIGHT,
+                    border: `1.5px solid ${ACCENT_BORDER}`,
+                    borderRadius: 10,
+                    cursor: bceLoading ? "wait" : "pointer",
+                    display: "flex", alignItems: "center", gap: 5,
+                    fontFamily: "'Figtree', sans-serif",
+                    fontSize: 12, fontWeight: 700,
+                    color: "#92400E",
+                    flexShrink: 0,
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  {bceLoading
+                    ? <Loader2 size={13} style={{ color: ACCENT, animation: "bce-spin 1s linear infinite" }} />
+                    : <Building2 size={13} style={{ color: ACCENT }} />
+                  }
+                  BCE
+                </button>
+              </div>
+
+              {/* Dropdown résultats BCE */}
+              {showBceDrop && (bceLoading || bceResults.length > 0) && (
+                <div style={{
+                  position: "absolute", zIndex: 60, left: 0, right: 0, top: "calc(100% + 4px)",
+                  background: "#FFFFFF",
+                  borderRadius: 12,
+                  border: "1.5px solid #F5F0E8",
+                  boxShadow: "0 8px 24px rgba(0,0,0,0.12)",
+                  overflow: "hidden",
+                }}>
+                  <style>{`@keyframes bce-spin { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }`}</style>
+                  {bceLoading ? (
+                    <div style={{ padding: "12px 14px", display: "flex", alignItems: "center", gap: 8 }}>
+                      <Loader2 size={13} style={{ color: ACCENT, animation: "bce-spin 1s linear infinite" }} />
+                      <span style={{ fontFamily: "'Figtree', sans-serif", fontSize: 13, color: "#94A3B8" }}>Recherche BCE...</span>
+                    </div>
+                  ) : bceResults.length === 0 ? (
+                    <div style={{ padding: "12px 14px", fontFamily: "'Figtree', sans-serif", fontSize: 13, color: "#94A3B8", fontStyle: "italic" }}>
+                      Aucune entreprise trouvée
+                    </div>
+                  ) : (
+                    <>
+                      {bceResults.map((company, i) => (
+                        <button
+                          key={i}
+                          onMouseDown={() => selectBCEResult(company)}
+                          style={{
+                            width: "100%", background: "none", border: "none",
+                            cursor: "pointer", textAlign: "left",
+                            padding: "10px 14px",
+                            borderBottom: i < bceResults.length - 1 ? "1px solid #F5F0E8" : "none",
+                          }}
+                        >
+                          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
+                            <p style={{ margin: 0, fontFamily: "'Figtree', sans-serif", fontSize: 13, fontWeight: 700, color: "#0F172A" }}>{company.name}</p>
+                            {!company.active && (
+                              <span style={{ fontSize: 10, background: "#FEE2E2", color: "#DC2626", borderRadius: 4, padding: "1px 5px", fontWeight: 700, flexShrink: 0 }}>Inactif</span>
+                            )}
+                          </div>
+                          <p style={{ margin: "2px 0 0 0", fontFamily: "'Figtree', sans-serif", fontSize: 11, color: "#94A3B8" }}>
+                            {[company.vat, company.address].filter(Boolean).join(" · ")}
+                          </p>
+                        </button>
+                      ))}
+                      <button
+                        onClick={() => { setBceResults([]); setShowBceDrop(false) }}
+                        style={{
+                          width: "100%", padding: "6px 14px",
+                          background: "#FAFAF8", border: "none",
+                          fontFamily: "'Figtree', sans-serif", fontSize: 11, color: "#94A3B8",
+                          cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 4,
+                        }}
+                      >
+                        <X size={11} /> Fermer
+                      </button>
+                    </>
+                  )}
+                </div>
+              )}
             </div>
 
             <div className="cp-modal-field">
